@@ -9,17 +9,23 @@ On aura besoin de cette clé auto-générée pour créer les enregistrements dan
 Pour traiter les clé auto-générées avec JDBC, voir cet exemple :
 
 ```java
-String commandeSQL = " ..."; 
+String commandeSQL = "INSERT INTO ... VALUES( ... )"; 
+// On prépare la requête en précisant qu'on veut récupérer les clés auto-générées
 PreparedStatement statement = connection.prepareStatement( commandeSQL, Statement.RETURN_GENERATED_KEYS) ; 
+
 // Définir les paramètres éventuels de la requête
 // ...
 
-statement.executeUpdate(); 
+// On exécute la requête, la clé est auto-générée à ce moment là
+int numberUpdated = statement.executeUpdate(); // Doit normalement être égal à 1
+
 // Les clefs autogénérées sont retournées sous forme de ResultSet, 
-// il se peut qu'une requête génère plusieurs clés
+// car il se peut qu'une requête génère plusieurs clés
 ResultSet clefs = statement.getGeneratedKeys(); 
+
 clefs.next(); // On lit la première clé générée
-System.out.printn("La première clef autogénérée vaut " + clefs.getInt(1));   
+System.out.printn("La première clef autogénérée vaut " + clefs.getInt(1));
+// Les clés auto-générées sont en général des entiers   
 
 
 ```
