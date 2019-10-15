@@ -5,6 +5,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.logging.Level;
@@ -76,9 +77,34 @@ public class DAO {
 	 * taille
 	 * @throws java.lang.Exception si la transaction a échoué
 	 */
-	public void createInvoice(CustomerEntity customer, int[] productIDs, int[] quantities)
-		throws Exception {
-		throw new UnsupportedOperationException("Pas encore implémenté");
+	public void createInvoice(CustomerEntity customer, int[] productIDs, int[] quantities) throws Exception{
+		if (productIDs.length != quantities.length){
+                    throw new Exception("La liste des produits et des quantité ne corresponde pas. ");
+                }
+                int total = 0;
+                String sqlInvoice = "INSERT INTO Invoice VALUES(?, ?)";
+                String sqlPrix = "SELECT Price FROM Product WHERE ID=?";
+                String sqlItem = "INSERT INTO Item VALUES(?,?,?,?)";
+                
+                
+		try (	Connection myConnection = myDataSource.getConnection();
+			PreparedStatement statement = myConnection.prepareStatement(sqlPrix)) {
+			
+			myConnection.setAutoCommit(false); // On démarre une transaction
+			
+                        try{
+                            for (int i =0 ;i<productIDs.length;i++ ){
+                                statement.setInt(1, productIDs[i]);
+                                ResultSet rs = statement.executeQuery();
+                                int p = rs.getInt("Price");
+                                total += p * quantities[i];
+                                
+                            }
+                        }
+                        
+                }
+                
+               
 	}
 
 	/**
