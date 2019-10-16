@@ -81,31 +81,75 @@ public class DAO {
 		if (productIDs.length != quantities.length){
                     throw new Exception("La liste des produits et des quantité ne corresponde pas. ");
                 }
+                
                 int total = 0;
-                String sqlInvoice = "INSERT INTO Invoice VALUES(?, ?)";
+                String sqlInvoice = "INSERT INTO Invoice (CustomerID) VALUES(?)";
                 String sqlPrix = "SELECT Price FROM Product WHERE ID=?";
-                String sqlItem = "INSERT INTO Item VALUES(?,?,?,?)";
+                String sqlItem = "INSERT INTO Item VALUES(?,?,?,?,?)";
+                //List prix = new ArrayList();
                 
-                
-		try (	Connection myConnection = myDataSource.getConnection();
-			PreparedStatement statement = myConnection.prepareStatement(sqlPrix)) {
-			
-			myConnection.setAutoCommit(false); // On démarre une transaction
-			
-                        try{
-                            for (int i =0 ;i<productIDs.length;i++ ){
-                                statement.setInt(1, productIDs[i]);
-                                ResultSet rs = statement.executeQuery();
-                                int p = rs.getInt("Price");
-                                total += p * quantities[i];
-                                
-                            }
+                try (Connection connection = myDataSource.getConnection();
+			PreparedStatement statement1 = connection.prepareStatement(sqlInvoice, Statement.RETURN_GENERATED_KEYS);
+                        PreparedStatement statement2 = connection.prepareStatement(sqlPrix);
+                        PreparedStatement statement3 = connection.prepareStatement(sqlItem);) 
+                {
+                    connection.setAutoCommit(false); // On démarre une transaction
+                    
+                    try{
+                        statement1.setInt(1,customer.getCustomerId());
+
+                        if (statement1.executeUpdate() != 1){
+                            throw new Exception("échec création facture.");
                         }
                         
+                        ResultSet keys = statement1.getGeneratedKeys();
+                        keys.next();
+                        int idFac = keys.getInt(1);
+
+                        for (int i =0 ;i<productIDs.length;i++ ){
+
+                           /* Récupération du prix */
+                           statement2.setInt(1, productIDs[i]);
+                           float prix;
+
+                           try (ResultSet resultSet = statement2.executeQuery()) {
+                                   if (resultSet.next()) {
+                                       prix = resultSet.getFloat("Price");
+                                   }
+                                   else{
+                                       throw new Exception("Produit inconnu.");
+                                   }
+                           }
+                        
+                           // creation item
+                            statement3.setInt(1,idFac);
+                            statement3.setInt(2,i);
+                            statement3.setInt(3,productIDs[i]);
+                            statement3.setInt(4,quantities[i]);
+                            statement3.setFloat(5,prix );
+                            
+                            int numberUpdated = statement3.executeUpdate();
+                            System.out.println(numberUpdated);
+                            if (numberUpdated != 1){
+                                throw new Exception("ERROR creation ligne facture");
+                            }
+                        }  
+                        // Tout s'est bien passé, on peut valider la transaction
+                        connection.commit();
+                    }
+                    catch(Exception e){
+                        connection.rollback(); // On annule la transaction
+                        throw e;       
+                    } finally {
+				 // On revient au mode de fonctionnement sans transaction
+				connection.setAutoCommit(true);				
+                    }
                 }
+        }
                 
+                
+		
                
-	}
 
 	/**
 	 *
@@ -114,7 +158,7 @@ public class DAO {
 	 */
 	public int numberOfCustomers() throws SQLException {
 		int result = 0;
-
+                
 		String sql = "SELECT COUNT(*) AS NUMBER FROM Customer";
 		try (Connection connection = myDataSource.getConnection();
 			Statement stmt = connection.createStatement()) {
