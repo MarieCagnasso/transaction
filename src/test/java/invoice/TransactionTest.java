@@ -94,8 +94,41 @@ public class TransactionTest {
 		assertEquals(before + 2f * 10f, after, 0.001f);		
 	}
 	
-
-	
+        @Test (expected = Exception.class)
+        public void createInvoiceWithUnknownItem() throws Exception{
+                // Un tableau de 1 productID
+		int[] productIds = new int[]{0,10}; // Le produit 0 vaut 10 €
+		// Un tableau de 1 quantites
+		int[] quantities = new int[]{2,2};
+                // On exécute la transaction
+		myDAO.createInvoice(myCustomer, productIds, quantities);
+        }
+        
+	@Test (expected = Exception.class)
+        public void createInvoiceWithNegativeQuantitie() throws Exception{
+                // Un tableau de 1 productID
+		int[] productIds = new int[]{0}; // Le produit 0 vaut 10 €
+		// Un tableau de 1 quantites
+		int[] quantities = new int[]{-2};
+                // On exécute la transaction
+		myDAO.createInvoice(myCustomer, productIds, quantities);
+        }
+        
+        @Test (expected = Exception.class)
+        public void createInvoiceWithBadNumberOfItem() throws Exception{
+                // Un tableau de 1 productID
+		int[] productIds = new int[]{0,1}; // Le produit 0 vaut 10 €
+		// Un tableau de 1 quantites
+		int[] quantities = new int[]{2};
+                // On exécute la transaction
+		myDAO.createInvoice(myCustomer, productIds, quantities);
+        }
+        
+         @Test 
+        public void testNumberOfCustomers() throws Exception{
+                assertEquals(myDAO.numberOfCustomers(), 1);
+        }
+        
 	public static DataSource getDataSource() throws SQLException {
 		org.hsqldb.jdbc.JDBCDataSource ds = new org.hsqldb.jdbc.JDBCDataSource();
 		ds.setDatabase("jdbc:hsqldb:mem:testcase;shutdown=true");
